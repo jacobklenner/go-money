@@ -44,8 +44,8 @@ func TestRounding(t *testing.T) {
 
 func TestMoneyAdditon(t *testing.T) {
 	// test Addiditon, Precision 0
-	m1 := Money{Value: 1234, Precision: 0} // 1234 EUR
-	m2 := Money{Value: 567, Precision: 0}  // 567 EUR
+	m1 := Money{Value: 1234, Precision: 0}
+	m2 := Money{Value: 567, Precision: 0}
 
 	t1, _ := m1.Add(m2) // 1234 + 567 = 1801, prec 0
 
