@@ -5,6 +5,15 @@ import "math"
 type Money struct {
 	Value     int64
 	Precision int64
+	unit      string // TODO implement
+	currency  string // TODO implement
+}
+
+// precision 2 is default for percentage
+// e.g. Percent{Value:5, Precision:2} = 0.05 = 5%
+type Percent struct {
+	Value     int64
+	Precision int64
 }
 
 const maxPrecision int64 = 10
@@ -84,6 +93,23 @@ func (m Money) Divide(t Money) (int64, bool) {
 	return val, true
 }
 
+// calculates the percent of an amount of money
+func (m Money) Percent(p Percent) (Money, bool) {
+	if m.Value*p.Value > math.MaxInt {
+		return Money{}, false
+	}
+
+	val := m.Value * p.Value
+	prec := m.Precision + p.Precision
+
+	res := clean(Money{
+		Value:     val,
+		Precision: prec,
+	})
+
+	return res, true
+}
+
 func clean(m Money) (r Money) {
 	// if Value is zero, Precision is 0 by default
 	if m.Value == 0 {
@@ -140,7 +166,6 @@ func (m Money) round(p int64) Money {
 		Value:     val,
 		Precision: p,
 	}
-
 }
 
 func makeEquatable(a Money, b Money) (Money, Money, int64) {

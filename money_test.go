@@ -42,6 +42,7 @@ func TestRounding(t *testing.T) {
 	}
 }
 
+// TODO test the ok return value
 func TestMoneyAdditon(t *testing.T) {
 	// test Addiditon, Precision 0
 	m1 := Money{Value: 1234, Precision: 0}
@@ -244,6 +245,38 @@ func TestMoneyDivision(t *testing.T) {
 
 	if r5 != 0 {
 		t.Logf("expected Value: 0, got %d", r5)
+		t.Fail()
+	}
+}
+
+func TestMoneyPercent(t *testing.T) {
+	m := Money{Value: 1000, Precision: 0}
+	p := Percent{Value: 1, Precision: 0}
+
+	r, _ := m.Percent(p) // 100% of 1000 = 1000
+
+	if r.Value != 1000 || r.Precision != 0 {
+		t.Logf("expected value: 1000, got %d. expected precision: 0, got %d", r.Value, r.Precision)
+		t.Fail()
+	}
+
+	m = Money{Value: 1000, Precision: 0}
+	p = Percent{Value: 1, Precision: 2}
+
+	r, _ = m.Percent(p) // 1% of 1000 = 10
+
+	if r.Value != 10 || r.Precision != 0 {
+		t.Logf("expected value: 10, got %d. expected precision: 0, got %d", r.Value, r.Precision)
+		t.Fail()
+	}
+
+	m = Money{Value: 345, Precision: 1}
+	p = Percent{Value: 15, Precision: 2}
+
+	r, _ = m.Percent(p) // 15% of 34.5 = 5.175
+
+	if r.Value != 5175 || r.Precision != 3 {
+		t.Logf("expected value: 5175, got %d. expected precision: 3, got %d", r.Value, r.Precision)
 		t.Fail()
 	}
 }
