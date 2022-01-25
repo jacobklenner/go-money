@@ -32,7 +32,7 @@ func TestRounding(t *testing.T) {
 		t.Fail()
 	}
 
-	m4 := Money{Value: 12300, Precision: 1} // 1234.5 -> 1235
+	m4 := Money{Value: 12300, Precision: 1} // 12300 -> 1230
 
 	r4 := m4.round(0)
 
