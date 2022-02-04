@@ -279,4 +279,14 @@ func TestMoneyPercent(t *testing.T) {
 		t.Logf("expected value: 5175, got %d. expected precision: 3, got %d", r.Value, r.Precision)
 		t.Fail()
 	}
+
+	m = Money{Value: 1000, Precision: 0} // 1000 units
+	p = Percent{Value: 2, Precision: 2}  // 0.02 = 2%
+
+	r, _ = m.Percent(p) // 2% of 1000 = 20 prec 0
+
+	if r.Value != 20 || r.Precision != 0 {
+		t.Logf("expected value: 20, got %d. expected precision: 0, got %d", r.Value, r.Precision)
+		t.Fail()
+	}
 }
