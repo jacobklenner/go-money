@@ -142,10 +142,20 @@ func TestWhereInOrNotEqualOrderByDesc(t *testing.T) {
 	assert(t, exp, q.Query)
 }
 
-func TestEmptyWhere(t *testing.T) {
+func TestEmptyWhereAnd(t *testing.T) {
 	q := getTestQuery()
 
 	q.SelectAll().Where(q.Columns["status"].In([]string{})).And(q.Columns["value"].GreaterThan("100"))
+
+	exp := fmt.Sprintf("SELECT * FROM %s.%s WHERE value > 100;", q.Database, q.Table)
+
+	assert(t, exp, q.Query)
+}
+
+func TestEmptyWhereOr(t *testing.T) {
+	q := getTestQuery()
+
+	q.SelectAll().Where(q.Columns["status"].In([]string{})).Or(q.Columns["value"].GreaterThan("100"))
 
 	exp := fmt.Sprintf("SELECT * FROM %s.%s WHERE value > 100;", q.Database, q.Table)
 
