@@ -135,9 +135,19 @@ func TestWhereLikeAndBetweenOrderByAsc(t *testing.T) {
 func TestWhereInOrNotEqualOrderByDesc(t *testing.T) {
 	q := getTestQuery()
 
-	q.SelectAll().Where(q.Columns["status"].In(`'failed','deleted'`)).Or(q.Columns["value"].NotEqual(`100`)).OrderByDesc(q.Columns["created_at"])
+	q.SelectAll().Where(q.Columns["status"].In([]string{"failed", "deleted"})).Or(q.Columns["value"].NotEqual(`100`)).OrderByDesc(q.Columns["created_at"])
 
 	exp := fmt.Sprintf("SELECT * FROM %s.%s WHERE status IN ('failed','deleted') OR value <> 100 ORDER BY created_at DESC;", q.Database, q.Table)
+
+	assert(t, exp, q.Query)
+}
+
+func TestEmptyWhere(t *testing.T) {
+	q := getTestQuery()
+
+	q.SelectAll().Where(q.Columns["status"].In([]string{})).And(q.Columns["value"].GreaterThan("100"))
+
+	exp := fmt.Sprintf("SELECT * FROM %s.%s WHERE value > 100;", q.Database, q.Table)
 
 	assert(t, exp, q.Query)
 }

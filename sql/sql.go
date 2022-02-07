@@ -59,12 +59,22 @@ func (c Column) Between(l string, u string) string {
 	return fmt.Sprintf("%s BETWEEN %s AND %s", c.Name, l, u)
 }
 
-func (c Column) In(r string) string {
-	return fmt.Sprintf("%s IN (%s)", c.Name, r)
+func (c Column) In(r []string) string {
+	if len(r) == 0 {
+		return ""
+	}
+	s := strings.Join(r, "','")
+
+	return fmt.Sprintf("%s IN ('%s')", c.Name, s)
 }
 
-func (c Column) NotIn(r string) string {
-	return fmt.Sprintf("%s NOT IN (%s)", c.Name, r)
+func (c Column) NotIn(r []string) string {
+	if len(r) == 0 {
+		return ""
+	}
+	s := strings.Join(r, ",")
+
+	return fmt.Sprintf("%s NOT IN (%s)", c.Name, s)
 }
 
 func (q *Query) Select(cols []string) *Query {
@@ -95,6 +105,10 @@ func (q *Query) SelectAll() *Query {
 }
 
 func (q *Query) Where(cond string) *Query {
+	if len(cond) == 0 {
+		return q
+	}
+
 	q.Query = strings.TrimSuffix(q.Query, ";")
 	q.Query = fmt.Sprintf("%s WHERE %s;", q.Query, cond)
 
@@ -102,6 +116,15 @@ func (q *Query) Where(cond string) *Query {
 }
 
 func (q *Query) And(cond string) *Query {
+	if len(cond) == 0 {
+		return q
+	}
+
+	// default to where if there has not been a where statement yet
+	if !strings.Contains(q.Query, " WHERE ") {
+		return q.Where(cond)
+	}
+
 	q.Query = strings.TrimSuffix(q.Query, ";")
 	q.Query = fmt.Sprintf("%s AND %s;", q.Query, cond)
 
@@ -109,6 +132,15 @@ func (q *Query) And(cond string) *Query {
 }
 
 func (q *Query) Or(cond string) *Query {
+	if len(cond) == 0 {
+		return q
+	}
+
+	// default to where if there has not been a where statement yet
+	if !strings.Contains(q.Query, " WHERE ") {
+		return q.Where(cond)
+	}
+
 	q.Query = strings.TrimSuffix(q.Query, ";")
 	q.Query = fmt.Sprintf("%s OR %s;", q.Query, cond)
 
