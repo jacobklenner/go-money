@@ -161,3 +161,36 @@ func TestEmptyWhereOr(t *testing.T) {
 
 	assert(t, exp, q.Query)
 }
+
+func TestCallProcedureNoParams(t *testing.T) {
+	q := getTestQuery()
+	q.Procedure = "get_orders"
+
+	q.Call()
+
+	exp := fmt.Sprintf("CALL %s.%s;", q.Database, q.Procedure)
+
+	assert(t, exp, q.Query)
+}
+
+func TestCallProcedureOneParam(t *testing.T) {
+	q := getTestQuery()
+	q.Procedure = "get_orders"
+
+	q.Call().Param("'ord-123'")
+
+	exp := fmt.Sprintf("CALL %s.%s('ord-123');", q.Database, q.Procedure)
+
+	assert(t, exp, q.Query)
+}
+
+func TestCallProcedureTwoParams(t *testing.T) {
+	q := getTestQuery()
+	q.Procedure = "get_orders"
+
+	q.Call().Param("'ord-123'").Param("5")
+
+	exp := fmt.Sprintf("CALL %s.get_orders('ord-123', 5);", q.Database)
+
+	assert(t, exp, q.Query)
+}
