@@ -9,10 +9,11 @@ import (
 type Query struct {
 	// Language string // should support syntactic differences in mysql, postgres, ms sql etc
 	// Version string // may be differences in symbols based on versions
-	Database string
-	Table    string
-	Columns  Columns // TODO add support for table meta data, and can do some validation on the built query
-	Query    string
+	Database  string
+	Table     string
+	Procedure string
+	Columns   Columns // TODO add support for table meta data, and can do some validation on the built query
+	Query     string
 }
 
 type Columns map[string]Column
@@ -164,5 +165,26 @@ func (q *Query) OrderByAsc(col Column) *Query {
 func (q *Query) OrderByDesc(col Column) *Query {
 	q.Query = strings.TrimSuffix(q.Query, ";")
 	q.Query = fmt.Sprintf("%s ORDER BY %s DESC;", q.Query, col.Name)
+	return q
+}
+
+func (q *Query) Call() *Query {
+	q.Query = fmt.Sprintf("CALL %s.%s;", q.Database, q.Procedure)
+	return q
+}
+
+func (q *Query) Param(p string) *Query {
+	q.Query = strings.TrimSuffix(q.Query, ";")
+
+	if strings.HasSuffix(q.Query, "()") {
+		q.Query = strings.TrimSuffix(q.Query, ")")
+		q.Query = fmt.Sprintf("%s%s);", q.Query, p)
+	} else if strings.HasSuffix(q.Query, ")") {
+		q.Query = strings.TrimSuffix(q.Query, ")")
+		q.Query = fmt.Sprintf("%s, %s);", q.Query, p)
+	} else {
+		q.Query = fmt.Sprintf("%s(%s);", q.Query, p)
+	}
+
 	return q
 }
