@@ -5,8 +5,8 @@ import "math"
 type Money struct {
 	Value     int64
 	Precision int64
-	unit      string // TODO implement
-	currency  string // TODO implement
+	Unit      string
+	Currency  string
 }
 
 // precision 2 is default for percentage
