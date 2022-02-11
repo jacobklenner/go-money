@@ -306,8 +306,6 @@ func TestValueToFloat(t *testing.T) {
 	if v != e {
 		t.Fatalf("expected %f but got %f", e, v)
 	}
-
-	moneyTest{t}.assertMoneyEqual(e, r)
 }
 
 func TestValueToBigInt(t *testing.T) {
@@ -351,7 +349,6 @@ func TestGetUnit(t *testing.T) {
 	if cent != "cent" {
 		t.Fatalf(`expected "cent" but got %s`, euro)
 	}
-}
 
 	m3 := ZeroUsDollar()
 	dollar := m3.Unit()
