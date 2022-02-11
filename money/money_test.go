@@ -1,6 +1,8 @@
 package money
 
 import (
+	"encoding/json"
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -373,5 +375,28 @@ func TestEqualCurrency(t *testing.T) {
 
 	if !m1.EqualCurrency(m2) {
 		t.Fatalf("expected equal currency")
+	}
+}
+
+func TestMarshalJSON(t *testing.T) {
+	m := NewEuroFromFloat(529235.4859)
+
+	bs, err := m.MarshalJSON()
+
+	if err != nil {
+		t.Fatalf("error marshalling to json")
+	}
+
+	fmt.Println(string(bs))
+}
+
+func TestUnmarshalJSON(t *testing.T) {
+	j := `{"currency":"EUR","unit":"euro","value":"529235.4859"}`
+
+	var m Money
+	err := json.Unmarshal([]byte(j), &m)
+
+	if err != nil {
+		t.Fatalf("error unmarshalling json")
 	}
 }
