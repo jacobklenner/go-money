@@ -1,196 +1,247 @@
 package money
 
-import "math"
+import (
+	"math/big"
+
+	"github.com/shopspring/decimal"
+)
+
+type Currency string
+
+const (
+	EUR Currency = "EUR"
+	USD Currency = "USD"
+)
+
+type Unit string
+
+const (
+	Cent   Unit = "cent"
+	Euro   Unit = "euro"
+	Dollar Unit = "dollar"
+)
 
 type Money struct {
-	Value     int64
-	Precision int64
-	Unit      string
-	Currency  string
+	value    decimal.Decimal
+	currency Currency
+	unit     Unit
 }
 
-// precision 2 is default for percentage
-// e.g. Percent{Value:5, Precision:2} = 0.05 = 5%
-type Percent struct {
-	Value     int64
-	Precision int64
+func New(val int64, exp int32, c string, u string) Money {
+	return Money{
+		value:    decimal.New(val, exp),
+		unit:     Unit(u),
+		currency: Currency(c),
+	}
 }
 
-const maxPrecision int64 = 10
+func NewEuro(val int64, exp int32) Money {
+	return Money{
+		value:    decimal.New(val, exp),
+		unit:     Euro,
+		currency: EUR,
+	}
+}
 
-// adds t to m
-func (m Money) Add(t Money) (Money, bool) {
-	a, b, prec := makeEquatable(m, t)
+func ZeroEuro() Money {
+	return Money{
+		value:    decimal.Zero,
+		unit:     Euro,
+		currency: EUR,
+	}
+}
 
-	val := a.Value + b.Value
+func ZeroUsDollar() Money {
+	return Money{
+		value:    decimal.Zero,
+		unit:     Dollar,
+		currency: USD,
+	}
+}
 
-	res := clean(Money{
-		Value:     val,
-		Precision: prec,
-	})
+func NewEuroFromDecimal(d decimal.Decimal) Money {
+	return Money{
+		value:    d,
+		unit:     Euro,
+		currency: EUR,
+	}
+}
 
-	if res.Precision > maxPrecision {
+func NewEuroFromFloat(f float64) Money {
+	return Money{
+		value:    decimal.NewFromFloat(f),
+		unit:     Euro,
+		currency: EUR,
+	}
+}
+
+func NewEuroFromFloat32(f float32) Money {
+	return Money{
+		value:    decimal.NewFromFloat32(f),
+		unit:     Euro,
+		currency: EUR,
+	}
+}
+
+func NewEuroCent(val int64, exp int32) Money {
+	return Money{
+		value:    decimal.New(val, exp),
+		unit:     Cent,
+		currency: EUR,
+	}
+}
+
+func NewEuroCentFromDecimal(d decimal.Decimal) Money {
+	return Money{
+		value:    d,
+		unit:     Cent,
+		currency: EUR,
+	}
+}
+
+func NewEuroCentFromFloat32(f float32) Money {
+	return Money{
+		value:    decimal.NewFromFloat32(f),
+		unit:     Cent,
+		currency: EUR,
+	}
+}
+
+func NewEuroCentFromFloat(f float64) Money {
+	return Money{
+		value:    decimal.NewFromFloat(f),
+		unit:     Cent,
+		currency: EUR,
+	}
+}
+
+func (m1 Money) exactEqual(m2 Money) bool {
+	return m1.sameValue(m2) && m1.sameUnit(m2)
+}
+
+// evalutates whether two money structs share the same value, irrespective of the underlying currency
+// e.g. 100 EUR cent == 1 EUR euro
+func (m1 Money) Equal(m2 Money) bool {
+	if !m1.sameCurrency(m2) {
+		return false
+	}
+
+	if m1.sameUnit(m2) {
+		return m1.sameValue(m2)
+	}
+
+	// scale both to cent to evaluate
+	if m1.unit == Euro || m1.unit == Dollar {
+		m1.value = m1.value.Mul(decimal.New(10, 0))
+		m1.unit = Cent
+	} else if m2.unit == Euro || m2.unit == Dollar {
+		m2.value = m2.value.Mul(decimal.New(10, 0))
+		m2.unit = Cent
+	}
+
+	return m1.exactEqual(m2)
+}
+
+func (m1 Money) EqualCurrency(m2 Money) bool {
+	return m1.sameCurrency(m2)
+}
+
+// evaluates whether two money structs share the same base units
+// e.g. EUR cent != USD cent
+// e.g. EUR cent != EUR euro
+func (m1 Money) EqualUnit(m2 Money) bool {
+	return m1.sameUnit(m2)
+}
+
+func (m1 Money) sameValue(m2 Money) bool {
+	return m1.value.Equal(m2.value)
+}
+
+func (m1 Money) sameCurrency(m2 Money) bool {
+	return m1.currency == m2.currency
+}
+
+func (m1 Money) sameUnit(m2 Money) bool {
+	return m1.sameCurrency(m2) && m1.unit == m2.unit
+}
+
+// returns m1 + m2, ok
+func (m1 Money) Add(m2 Money) (Money, bool) {
+	if !m1.sameUnit(m2) {
 		return Money{}, false
 	}
 
 	return Money{
-		Value:     val,
-		Precision: prec,
+		value:    m1.value.Add(m2.value),
+		unit:     m1.unit,
+		currency: m1.currency,
 	}, true
 }
 
-// subtracts t from m
-func (m Money) Subtract(t Money) (Money, bool) {
-	a, b, prec := makeEquatable(m, t)
-
-	val := a.Value - b.Value
-
-	res := clean(Money{
-		Value:     val,
-		Precision: prec,
-	})
-
-	if res.Precision > maxPrecision {
+// returns m1 - m2, ok
+func (m1 Money) Subtract(m2 Money) (Money, bool) {
+	if !m1.sameUnit(m2) {
 		return Money{}, false
-	}
-
-	return clean(Money{
-		Value:     val,
-		Precision: prec,
-	}), true
-}
-
-// multiplies m by t
-func (m Money) Multiply(t Money) (Money, bool) {
-
-	// result cannot be larger than max int
-	if m.Value*t.Value > math.MaxInt {
-		return Money{}, false
-	}
-
-	val := m.Value * t.Value
-	prec := m.Precision + t.Precision
-
-	res := clean(Money{
-		Value:     val,
-		Precision: prec,
-	})
-
-	return res, true
-}
-
-// divides m by t, returns the integer number of times t fits into m
-// TODO return remainder Money object
-func (m Money) Divide(t Money) (int64, bool) {
-	a, b, _ := makeEquatable(m, t)
-	var val int64
-	if a.Value >= b.Value {
-		val = a.Value / b.Value
-	} else {
-		val = 0
-	}
-
-	return val, true
-}
-
-// calculates the percent of an amount of money
-func (m Money) Percent(p Percent) (Money, bool) {
-	if m.Value*p.Value > math.MaxInt {
-		return Money{}, false
-	}
-
-	val := m.Value * p.Value
-	prec := m.Precision + p.Precision
-
-	res := clean(Money{
-		Value:     val,
-		Precision: prec,
-	})
-
-	return res, true
-}
-
-func clean(m Money) (r Money) {
-	// if Value is zero, Precision is 0 by default
-	if m.Value == 0 {
-		return Money{
-			Value:     0,
-			Precision: 0,
-		}
-	}
-
-	// remove trailing zeros, and decrease Precision
-	if m.Precision > 0 {
-		for math.Mod(float64(m.Value), 10) == 0 {
-			m.Value = m.Value / 10
-			m.Precision = m.Precision - 1
-			if m.Precision == 0 {
-				break
-			}
-		}
-	}
-
-	// round to max Precision
-	if m.Precision > maxPrecision {
-		m = m.round(maxPrecision)
-	}
-
-	return m
-}
-
-// defualt money rounding
-func (m Money) round(p int64) Money {
-	if m.Precision < p {
-		return m
-	}
-
-	pwr := m.Precision - p
-
-	base := int64(math.Pow10(int(pwr)))
-
-	rem := int64(math.Remainder(float64(m.Value), float64(base)))
-
-	val := m.Value
-
-	if rem >= int64(base/2) {
-		// round up and decrease Precision
-		val = (val + (base - rem)) / base
-	}
-
-	if rem < int64(base/2) {
-		// round down and decrease Precision
-		val = (val - rem) / base
 	}
 
 	return Money{
-		Value:     val,
-		Precision: p,
-	}
+		value:    m1.value.Sub(m2.value),
+		unit:     m1.unit,
+		currency: m1.currency,
+	}, true
 }
 
-func makeEquatable(a Money, b Money) (Money, Money, int64) {
-	// a more precise than b, need to scale up b
-	// e.g. a: Money{Value:1234, prec:4} = 0.1234
-	// b: Money{Value:1234, prec:2} = 12.34
-	var prec int64
-
-	if a.Precision > b.Precision {
-		diff := a.Precision - b.Precision
-		b.Value = b.Value * int64(math.Pow(10, float64(diff)))
-		b.Precision = a.Precision
-		prec = a.Precision
+// returns m1 * m2, ok
+func (m1 Money) Multiply(m2 Money) (Money, bool) {
+	if !m1.sameUnit(m2) {
+		return Money{}, false
 	}
 
-	if a.Precision < b.Precision {
-		diff := b.Precision - a.Precision
-		a.Value = a.Value * int64(math.Pow(10, float64(diff)))
-		a.Precision = b.Precision
-		prec = b.Precision
+	return Money{
+		value:    m1.value.Mul(m2.value),
+		unit:     m1.unit,
+		currency: m1.currency,
+	}, true
+}
+
+// returns m1 / m2, ok
+func (m1 Money) Divide(m2 Money) (Money, bool) {
+	if !m1.sameUnit(m2) {
+		return Money{}, false
 	}
 
-	if a.Precision == b.Precision {
-		prec = a.Precision
-	}
+	return Money{
+		value:    m1.value.Div(m2.value),
+		unit:     m1.unit,
+		currency: m1.currency,
+	}, true
+}
 
-	return a, b, prec
+// returns m * %p, ok
+func (m Money) Percent(p decimal.Decimal) (Money, bool) {
+	return Money{
+		value:    m.value.Mul(p),
+		unit:     m.unit,
+		currency: m.currency,
+	}, true
+}
+
+// returns float64 representation of the money, and flag indicating if this value is exact
+func (m Money) ValueFloat64() (val float64, exact bool) {
+	val, exact = m.value.Float64()
+	return
+}
+
+// returns big int representation of the money
+func (m Money) ValueBigInt() *big.Int {
+	return m.value.BigInt()
+}
+
+// returns the currency
+func (m Money) Currency() string {
+	return string(m.currency)
+}
+
+func (m Money) Unit() string {
+	return string(m.unit)
 }
