@@ -1,292 +1,377 @@
 package money
 
 import (
+	"math/big"
 	"testing"
+
+	"github.com/shopspring/decimal"
 )
 
-func TestRounding(t *testing.T) {
-	m1 := Money{Value: 1234, Precision: 4} // 0.1234 -> 0.123
+type moneyTest struct {
+	*testing.T
+}
 
-	r1 := m1.round(3)
-
-	if r1.Value != 123 || r1.Precision != 3 {
-		t.Logf("expected Value: 123, got %d. expected Precision: 3, got %d", r1.Value, r1.Precision)
-		t.Fail()
-	}
-
-	m2 := Money{Value: 12345, Precision: 1} // 1234.5 -> 1235
-
-	r2 := m2.round(0)
-
-	if r2.Value != 1235 || r2.Precision != 0 {
-		t.Logf("expected Value: 1235, got %d. expected Precision: 0, got %d", r2.Value, r2.Precision)
-		t.Fail()
-	}
-
-	m3 := Money{Value: 123499, Precision: 2} // 1234.99 -> 1235
-
-	r3 := m3.round(0)
-
-	if r3.Value != 1235 || r3.Precision != 0 {
-		t.Logf("expected Value: 1235, got %d. expected Precision: 0, got %d", r3.Value, r3.Precision)
-		t.Fail()
-	}
-
-	m4 := Money{Value: 12300, Precision: 1} // 12300 -> 1230
-
-	r4 := m4.round(0)
-
-	if r4.Value != 1230 || r4.Precision != 0 {
-		t.Logf("expected Value: 1230, got %d. expected Precision: 0, got %d", r4.Value, r4.Precision)
-		t.Fail()
+func (mt moneyTest) assertMoneyEqual(expected Money, result Money) {
+	if !result.exactEqual(expected) {
+		mt.Fatalf("expected %+v but got %+v", expected, result)
 	}
 }
 
-// TODO test the ok return value
-func TestMoneyAdditon(t *testing.T) {
-	// test Addiditon, Precision 0
-	m1 := Money{Value: 1234, Precision: 0}
-	m2 := Money{Value: 567, Precision: 0}
-
-	t1, _ := m1.Add(m2) // 1234 + 567 = 1801, prec 0
-
-	if t1.Value != 1801 || t1.Precision != 0 {
-		t.Logf("expected Value: 6904, got %d. expected Precision: 0, got %d", t1.Value, t1.Precision)
-		t.Fail()
+func TestNew(t *testing.T) {
+	e := Money{
+		value:    decimal.New(100, 1),
+		currency: "EUR",
+		unit:     "cent",
 	}
 
-	// test negative Addition, Precision 0
-	m1 = Money{Value: -901, Precision: 0}
-	m2 = Money{Value: -1, Precision: 0}
+	r := New(100, 1, "EUR", "cent")
 
-	t2, _ := m1.Add(m2) // -901 + -1 = -902, prec 0
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
 
-	if t2.Value != -902 || t2.Precision != 0 {
-		t.Logf("expected Value: -902, got %d. expected Precision: 0, got %d", t2.Value, t2.Precision)
-		t.Fail()
+func TestNewEuro(t *testing.T) {
+	e := Money{
+		value:    decimal.New(345, 2),
+		currency: "EUR",
+		unit:     "euro",
 	}
 
-	// test Addition, Precision different
-	m1 = Money{Value: 901, Precision: 0}
-	m2 = Money{Value: 5843, Precision: 4}
+	r := NewEuro(345, 2)
 
-	t3, _ := m1.Add(m2) // 901 + 0.5843 = 901.5843
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
 
-	if t3.Value != 9015843 || t3.Precision != 4 {
-		t.Logf("expected Value: 9015843, got %d. expected Precision: 4, got %d", t3.Value, t3.Precision)
-		t.Fail()
+func TestZeroEuro(t *testing.T) {
+	e := Money{
+		value:    decimal.Zero,
+		unit:     Euro,
+		currency: EUR,
+	}
+
+	r := ZeroEuro()
+
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
+
+func TestZeroUsDollar(t *testing.T) {
+	e := Money{
+		value:    decimal.Zero,
+		unit:     Dollar,
+		currency: USD,
+	}
+
+	r := ZeroUsDollar()
+
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
+
+func TestNewEuroFromFloat32(t *testing.T) {
+	e := Money{
+		value:    decimal.NewFromFloat32(4503.203),
+		currency: "EUR",
+		unit:     "euro",
+	}
+
+	r := NewEuroFromFloat32(4503.203)
+
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
+
+func TestNewEuroFromFloat(t *testing.T) {
+	e := Money{
+		value:    decimal.NewFromFloat(4503.203),
+		currency: "EUR",
+		unit:     "euro",
+	}
+
+	r := NewEuroFromFloat(4503.203)
+
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
+
+func TestNewEuroFromDecimal(t *testing.T) {
+	e := Money{
+		value:    decimal.New(4539, 3),
+		currency: "EUR",
+		unit:     "euro",
+	}
+
+	r := NewEuroFromDecimal(decimal.New(4539, 3))
+
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
+
+func TestNewEuroCent(t *testing.T) {
+	e := Money{
+		value:    decimal.New(583920, -1),
+		currency: "EUR",
+		unit:     "cent",
+	}
+
+	r := NewEuroCent(583920, -1)
+
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
+
+func TestNewEuroCentFromFloat32(t *testing.T) {
+	e := Money{
+		value:    decimal.NewFromFloat32(58292.304),
+		currency: "EUR",
+		unit:     "cent",
+	}
+
+	r := NewEuroCentFromFloat32(58292.304)
+
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
+
+func TestNewEuroCentFromFloat(t *testing.T) {
+	e := Money{
+		value:    decimal.NewFromFloat(58292.304),
+		currency: "EUR",
+		unit:     "cent",
+	}
+
+	r := NewEuroCentFromFloat(58292.304)
+
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
+
+func TestNewEuroCentFromDecimal(t *testing.T) {
+	d := decimal.New(4820, 4)
+
+	e := Money{
+		value:    d,
+		currency: "EUR",
+		unit:     "cent",
+	}
+
+	r := NewEuroCentFromDecimal(d)
+
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
+
+func TestEqual(t *testing.T) {
+	m1 := NewEuroFromFloat(5738.0)
+	m2 := NewEuroFromFloat(5738.0)
+
+	if !m1.Equal(m2) {
+		t.Fatal("expected money would be exact")
+	}
+
+	m3 := NewEuroFromFloat(6930.20)
+	m4 := NewEuroCentFromFloat(693020)
+
+	if m3.Equal(m4) {
+		t.Fatal("expected money would not be exact")
+	}
+
+	if m4.Equal(m3) {
+		t.Fatal("expected money would not be exact")
+	}
+
+	m5 := ZeroUsDollar()
+	m6 := ZeroEuro()
+
+	if m5.Equal(m6) {
+		t.Fatal("expected money would not be exact")
 	}
 }
 
-func TestMoneySubtraction(t *testing.T) {
-	m1 := Money{Value: 1000, Precision: 0}
-	m2 := Money{Value: 100, Precision: 0}
+func TestSameCurrencyAddition(t *testing.T) {
+	m1 := NewEuroCentFromFloat(14.5677)
+	m2 := NewEuroCentFromFloat(100.0000)
 
-	r1, _ := m1.Subtract(m2) // 1000 - 100 = 900
+	r, ok := m1.Add(m2)
 
-	if r1.Value != 900 || r1.Precision != 0 {
-		t.Logf("expected value: 900, got %d. expected precision: 0, got %d", r1.Value, r1.Precision)
-		t.Fail()
+	e := NewEuroCentFromFloat(114.5677)
+
+	if !ok {
+		t.Fatalf("incompatable units. expected same units.")
 	}
 
-	m1 = Money{Value: 1000, Precision: 1}
-	m2 = Money{Value: 100, Precision: 0}
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
 
-	r2, _ := m1.Subtract(m2) // 100 - 100 = 0
+func TestSameCurrencySubtraction(t *testing.T) {
+	m1 := NewEuroCentFromFloat(14.5677)
+	m2 := NewEuroCentFromFloat(100.0000)
 
-	if r2.Value != 0 || r2.Precision != 0 {
-		t.Logf("expected value: 0, got %d. expected precision: 0, got %d", r2.Value, r2.Precision)
-		t.Fail()
+	r, ok := m1.Subtract(m2)
+
+	e := NewEuroCentFromFloat(-85.4323)
+
+	if !ok {
+		t.Fatalf("incompatable units. expected same units.")
 	}
 
-	m1 = Money{Value: 100, Precision: 2}
-	m2 = Money{Value: 80, Precision: 0}
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
 
-	r3, _ := m1.Subtract(m2) // 1 - 80 = -79
+func TestSameCurrencyMultiplication(t *testing.T) {
+	m1 := NewEuroCentFromFloat(14.5677)
+	m2 := NewEuroCentFromFloat(100.0000)
 
-	if r3.Value != -79 || r3.Precision != 0 {
-		t.Logf("expected value: -79, got %d. expected precision: 0, got %d", r3.Value, r3.Precision)
-		t.Fail()
+	r, ok := m1.Multiply(m2)
+
+	e := NewEuroCentFromFloat(1456.77)
+
+	if !ok {
+		t.Fatalf("incompatable units. expected same units.")
 	}
 
-	m1 = Money{Value: 1000, Precision: 2}
-	m2 = Money{Value: 100, Precision: 2}
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
 
-	r4, _ := m1.Subtract(m2) // 10 - 1 = 9
+func TestSameCurrencyDivision(t *testing.T) {
+	m1 := NewEuroCentFromFloat(14.5677)
+	m2 := NewEuroCentFromFloat(100.0000)
 
-	if r4.Value != 9 || r4.Precision != 0 {
-		t.Logf("expected value: 9, got %d. expected precision: 0, got %d", r4.Value, r4.Precision)
-		t.Fail()
+	r, ok := m1.Divide(m2)
+
+	e := NewEuroCentFromFloat(0.145677)
+
+	if !ok {
+		t.Fatalf("incompatable units. expected same units.")
 	}
 
-	m1 = Money{Value: 8902, Precision: 4}
-	m2 = Money{Value: 123, Precision: 1}
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
 
-	r5, _ := m1.Subtract(m2) // 0.8902 - 12.3 = 11.4098
+func TestSameCurrencyPercent(t *testing.T) {
+	m1 := NewEuroCentFromFloat(14.5677)
+	p := decimal.NewFromFloat(0.000653)
 
-	if r5.Value != -114098 || r5.Precision != 4 {
-		t.Logf("expected value: 114098, got %d. expected precision: 4, got %d", r5.Value, r5.Precision)
-		t.Fail()
+	r, ok := m1.Percent(p)
+
+	e := NewEuroCentFromFloat(0.0095127081)
+
+	if !ok {
+		t.Fatalf("incompatable units. expected same units.")
 	}
 
-	m1 = Money{Value: 123, Precision: 1}
-	m2 = Money{Value: 90, Precision: 2}
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
 
-	r6, _ := m1.Subtract(m2) // 12.3 - 0.90 = 11.4
+func TestDifferentCurrencyAddition(t *testing.T) {
+	usd := New(123, 1, "USD", "dollar")
+	eur := New(123, 1, "EUR", "euro")
 
-	if r6.Value != 114 || r6.Precision != 1 {
-		t.Logf("expected value: 114, got %d. expected precision: 1, got %d", r6.Value, r6.Precision)
-		t.Fail()
+	_, ok := usd.Add(eur)
+
+	if ok {
+		t.Fatalf("should not return ok")
 	}
 }
 
-func TestMoneyMultiplication(t *testing.T) {
-	// Multiply two Precision 0
-	m1 := Money{Value: 1234, Precision: 0}
-	m2 := Money{Value: 890, Precision: 0}
+func TestDifferentCurrencySubtraction(t *testing.T) {
+	usd := New(123, 1, "USD", "dollar")
+	eur := New(123, 1, "EUR", "euro")
 
-	t1, _ := m1.Multiply(m2)
+	_, ok := usd.Subtract(eur)
 
-	if t1.Value != 1098260 || t1.Precision != 0 {
-		t.Logf("expected Value: 1098260, got %d. expected Precision: 0, got %d", t1.Value, t1.Precision)
-		t.Fail()
-	}
-
-	// Multiply two negative, Precision 0
-	m1 = Money{Value: -394, Precision: 0}
-	m2 = Money{Value: -201, Precision: 0}
-
-	t2, _ := m1.Multiply(m2)
-
-	if t2.Value != 79194 || t2.Precision != 0 {
-		t.Logf("expected Value: 79194, got %d. expected Precision: 0, got %d", t2.Value, t2.Precision)
-		t.Fail()
-	}
-
-	// Multiply negative, positive, Precision 0
-	m1 = Money{Value: -1234, Precision: 0}
-	m2 = Money{Value: 890, Precision: 0}
-
-	t3, _ := m1.Multiply(m2)
-
-	if t3.Value != -1098260 || t1.Precision != 0 {
-		t.Logf("expected Value: -1098260, got %d. expected Precision: 0, got %d", t3.Value, t3.Precision)
-		t.Fail()
-	}
-
-	// Multiply different Precisions, one zero
-	m1 = Money{Value: 1234, Precision: 4}
-	m2 = Money{Value: 890, Precision: 0}
-
-	t4, _ := m1.Multiply(m2)
-
-	if t4.Value != 109826 || t4.Precision != 3 {
-		t.Logf("expected Value: 109826, got %d. expected Precision: 3, got %d", t4.Value, t4.Precision)
-		t.Fail()
-	}
-
-	// Multiply some big boy Precisions
-	m1 = Money{Value: 1234, Precision: 6}
-	m2 = Money{Value: 890, Precision: 6}
-
-	t5, _ := m1.Multiply(m2)
-
-	if t5.Value != 10983 || t5.Precision != 10 {
-		t.Logf("expected Value: 10983, got %d. expected Precision: 10, got %d", t5.Value, t5.Precision)
-		t.Fail()
+	if ok {
+		t.Fatalf("should not return ok")
 	}
 }
 
-func TestMoneyDivision(t *testing.T) {
-	m1 := Money{Value: 1000, Precision: 0}
-	m2 := Money{Value: 10, Precision: 0}
+func TestDifferentCurrencyMultiplication(t *testing.T) {
+	usd := New(123, 1, "USD", "dollar")
+	eur := New(123, 1, "EUR", "euro")
 
-	r1, _ := m1.Divide(m2) // 1000 / 10 = 100
+	_, ok := usd.Multiply(eur)
 
-	if r1 != 100 {
-		t.Logf("expected Value: 100, got %d", r1)
-		t.Fail()
-	}
-
-	m1 = Money{Value: 100, Precision: 0}
-	m2 = Money{Value: 125, Precision: 1}
-
-	r2, _ := m1.Divide(m2) // 100 / 12.5 = 8
-
-	if r2 != 8 {
-		t.Logf("expected Value: 8, got %d", r2)
-		t.Fail()
-	}
-
-	m1 = Money{Value: 3456, Precision: 2}
-	m2 = Money{Value: 2, Precision: 0}
-
-	r3, _ := m1.Divide(m2) // 34.56 / 2 = 17
-
-	if r3 != 17 {
-		t.Logf("expected Value: 17, got %d", r3)
-		t.Fail()
-	}
-
-	m1 = Money{Value: 17493002, Precision: 4}
-	m2 = Money{Value: 102832, Precision: 4}
-
-	r4, _ := m1.Divide(m2) // 1749.3002 / 10.2832 = 170
-
-	if r4 != 170 {
-		t.Logf("expected Value: 170, got %d", r4)
-		t.Fail()
-	}
-
-	m1 = Money{Value: 283, Precision: 1}
-	m2 = Money{Value: 34, Precision: 0}
-
-	r5, _ := m1.Divide(m2)
-
-	if r5 != 0 {
-		t.Logf("expected Value: 0, got %d", r5)
-		t.Fail()
+	if ok {
+		t.Fatalf("should not return ok")
 	}
 }
 
-func TestMoneyPercent(t *testing.T) {
-	m := Money{Value: 1000, Precision: 0}
-	p := Percent{Value: 1, Precision: 0}
+func TestDifferentCurrencyDivision(t *testing.T) {
+	usd := New(123, 1, "USD", "dollar")
+	eur := New(123, 1, "EUR", "euro")
 
-	r, _ := m.Percent(p) // 100% of 1000 = 1000
+	_, ok := usd.Divide(eur)
 
-	if r.Value != 1000 || r.Precision != 0 {
-		t.Logf("expected value: 1000, got %d. expected precision: 0, got %d", r.Value, r.Precision)
-		t.Fail()
+	if ok {
+		t.Fatalf("should not return ok")
+	}
+}
+
+func TestValueToFloat(t *testing.T) {
+	e := 573.402
+	m := NewEuroCentFromFloat(e)
+
+	v, _ := m.ValueFloat64()
+
+	if v != e {
+		t.Fatalf("expected %f but got %f", e, v)
+	}
+}
+
+func TestValueToBigInt(t *testing.T) {
+	e := big.NewInt(68302029485030130)
+	m := NewEuroCent(68302029485030130, 0)
+
+	v := m.ValueBigInt()
+
+	if v.String() != e.String() {
+		t.Fatalf("expected %d but got %d", e, v)
+	}
+}
+
+func TestGetCurrency(t *testing.T) {
+	m1 := ZeroEuro()
+	eur := m1.Currency()
+
+	if eur != "EUR" {
+		t.Fatalf(`expected "EUR" but got %s`, eur)
 	}
 
-	m = Money{Value: 1000, Precision: 0}
-	p = Percent{Value: 1, Precision: 2}
+	m2 := ZeroUsDollar()
+	usd := m2.Currency()
 
-	r, _ = m.Percent(p) // 1% of 1000 = 10
+	if usd != "USD" {
+		t.Fatalf(`"expected USD but got %s`, usd)
+	}
+}
 
-	if r.Value != 10 || r.Precision != 0 {
-		t.Logf("expected value: 10, got %d. expected precision: 0, got %d", r.Value, r.Precision)
-		t.Fail()
+func TestGetUnit(t *testing.T) {
+	m1 := ZeroEuro()
+	euro := m1.Unit()
+
+	if euro != "euro" {
+		t.Fatalf(`expected "euro" but got %s`, euro)
 	}
 
-	m = Money{Value: 345, Precision: 1}
-	p = Percent{Value: 15, Precision: 2}
+	m2 := NewEuroCent(1, 0)
+	cent := m2.Unit()
 
-	r, _ = m.Percent(p) // 15% of 34.5 = 5.175
-
-	if r.Value != 5175 || r.Precision != 3 {
-		t.Logf("expected value: 5175, got %d. expected precision: 3, got %d", r.Value, r.Precision)
-		t.Fail()
+	if cent != "cent" {
+		t.Fatalf(`expected "cent" but got %s`, euro)
 	}
 
-	m = Money{Value: 1000, Precision: 0} // 1000 units
-	p = Percent{Value: 2, Precision: 2}  // 0.02 = 2%
+	m3 := ZeroUsDollar()
+	dollar := m3.Unit()
 
-	r, _ = m.Percent(p) // 2% of 1000 = 20 prec 0
+	if dollar != "dollar" {
+		t.Fatalf(`expected "dollar" but got %s`, euro)
+	}
+}
 
-	if r.Value != 20 || r.Precision != 0 {
-		t.Logf("expected value: 20, got %d. expected precision: 0, got %d", r.Value, r.Precision)
-		t.Fail()
+func TestEqualUnit(t *testing.T) {
+	m1 := NewEuroFromFloat(34920.43)
+	m2 := NewEuroFromFloat(505)
+
+	if !m1.EqualUnit(m2) {
+		t.Fatalf("expected equal units")
+	}
+}
+
+func TestEqualCurrency(t *testing.T) {
+	m1 := NewEuroFromFloat(34920.43)
+	m2 := NewEuroCentFromFloat(58302.405)
+
+	if !m1.EqualCurrency(m2) {
+		t.Fatalf("expected equal currency")
 	}
 }
