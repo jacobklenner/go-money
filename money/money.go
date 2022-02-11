@@ -1,6 +1,7 @@
 package money
 
 import (
+	"encoding/json"
 	"math/big"
 
 	"github.com/shopspring/decimal"
@@ -244,4 +245,36 @@ func (m Money) Currency() string {
 
 func (m Money) Unit() string {
 	return string(m.unit)
+}
+
+func (m Money) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"value":    m.value,
+		"currency": m.currency,
+		"unit":     m.unit,
+	})
+}
+
+func (m *Money) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		return nil
+	}
+	temp := map[string]string{}
+	err := json.Unmarshal(data, &temp)
+
+	if err != nil {
+		return err
+	}
+
+	v, err := decimal.NewFromString(temp["value"])
+
+	if err != nil {
+		return err
+	}
+
+	m.value = v
+	m.currency = Currency(string(temp["currency"]))
+	m.unit = Unit(string(temp["unit"]))
+
+	return err
 }
