@@ -1,6 +1,8 @@
 package money
 
 import (
+	"encoding/json"
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -20,8 +22,8 @@ func (mt moneyTest) assertMoneyEqual(expected Money, result Money) {
 func TestNew(t *testing.T) {
 	e := Money{
 		value:    decimal.New(100, 1),
-		currency: "EUR",
-		unit:     "cent",
+		currency: EUR,
+		unit:     CENT,
 	}
 
 	r := New(100, 1, "EUR", "cent")
@@ -29,11 +31,19 @@ func TestNew(t *testing.T) {
 	moneyTest{t}.assertMoneyEqual(e, r)
 }
 
+func TestNewBadArgs(t *testing.T) {
+	e := Money{}
+
+	r := New(100, 1, "hey", "there")
+
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
+
 func TestNewEuro(t *testing.T) {
 	e := Money{
 		value:    decimal.New(345, 2),
-		currency: "EUR",
-		unit:     "euro",
+		currency: EUR,
+		unit:     EURO,
 	}
 
 	r := NewEuro(345, 2)
@@ -44,7 +54,7 @@ func TestNewEuro(t *testing.T) {
 func TestZeroEuro(t *testing.T) {
 	e := Money{
 		value:    decimal.Zero,
-		unit:     Euro,
+		unit:     EURO,
 		currency: EUR,
 	}
 
@@ -56,7 +66,7 @@ func TestZeroEuro(t *testing.T) {
 func TestZeroUsDollar(t *testing.T) {
 	e := Money{
 		value:    decimal.Zero,
-		unit:     Dollar,
+		unit:     DOLLAR,
 		currency: USD,
 	}
 
@@ -68,8 +78,8 @@ func TestZeroUsDollar(t *testing.T) {
 func TestNewEuroFromFloat32(t *testing.T) {
 	e := Money{
 		value:    decimal.NewFromFloat32(4503.203),
-		currency: "EUR",
-		unit:     "euro",
+		currency: EUR,
+		unit:     EURO,
 	}
 
 	r := NewEuroFromFloat32(4503.203)
@@ -80,8 +90,8 @@ func TestNewEuroFromFloat32(t *testing.T) {
 func TestNewEuroFromFloat(t *testing.T) {
 	e := Money{
 		value:    decimal.NewFromFloat(4503.203),
-		currency: "EUR",
-		unit:     "euro",
+		currency: EUR,
+		unit:     EURO,
 	}
 
 	r := NewEuroFromFloat(4503.203)
@@ -92,8 +102,8 @@ func TestNewEuroFromFloat(t *testing.T) {
 func TestNewEuroFromDecimal(t *testing.T) {
 	e := Money{
 		value:    decimal.New(4539, 3),
-		currency: "EUR",
-		unit:     "euro",
+		currency: EUR,
+		unit:     EURO,
 	}
 
 	r := NewEuroFromDecimal(decimal.New(4539, 3))
@@ -104,8 +114,8 @@ func TestNewEuroFromDecimal(t *testing.T) {
 func TestNewEuroCent(t *testing.T) {
 	e := Money{
 		value:    decimal.New(583920, -1),
-		currency: "EUR",
-		unit:     "cent",
+		currency: EUR,
+		unit:     CENT,
 	}
 
 	r := NewEuroCent(583920, -1)
@@ -116,8 +126,8 @@ func TestNewEuroCent(t *testing.T) {
 func TestNewEuroCentFromFloat32(t *testing.T) {
 	e := Money{
 		value:    decimal.NewFromFloat32(58292.304),
-		currency: "EUR",
-		unit:     "cent",
+		currency: EUR,
+		unit:     CENT,
 	}
 
 	r := NewEuroCentFromFloat32(58292.304)
@@ -128,8 +138,8 @@ func TestNewEuroCentFromFloat32(t *testing.T) {
 func TestNewEuroCentFromFloat(t *testing.T) {
 	e := Money{
 		value:    decimal.NewFromFloat(58292.304),
-		currency: "EUR",
-		unit:     "cent",
+		currency: EUR,
+		unit:     CENT,
 	}
 
 	r := NewEuroCentFromFloat(58292.304)
@@ -142,8 +152,8 @@ func TestNewEuroCentFromDecimal(t *testing.T) {
 
 	e := Money{
 		value:    d,
-		currency: "EUR",
-		unit:     "cent",
+		currency: EUR,
+		unit:     CENT,
 	}
 
 	r := NewEuroCentFromDecimal(d)
@@ -339,21 +349,21 @@ func TestGetUnit(t *testing.T) {
 	m1 := ZeroEuro()
 	euro := m1.Unit()
 
-	if euro != "euro" {
+	if euro != "EURO" {
 		t.Fatalf(`expected "euro" but got %s`, euro)
 	}
 
 	m2 := NewEuroCent(1, 0)
 	cent := m2.Unit()
 
-	if cent != "cent" {
+	if cent != "CENT" {
 		t.Fatalf(`expected "cent" but got %s`, euro)
 	}
 
 	m3 := ZeroUsDollar()
 	dollar := m3.Unit()
 
-	if dollar != "dollar" {
+	if dollar != "DOLLAR" {
 		t.Fatalf(`expected "dollar" but got %s`, euro)
 	}
 }
@@ -374,4 +384,73 @@ func TestEqualCurrency(t *testing.T) {
 	if !m1.EqualCurrency(m2) {
 		t.Fatalf("expected equal currency")
 	}
+}
+
+func TestMarshalJSON(t *testing.T) {
+	m := NewEuroFromFloat(529235.4859)
+
+	bs, err := m.MarshalJSON()
+
+	if err != nil {
+		t.Fatalf("error marshalling to json")
+	}
+
+	fmt.Println(string(bs))
+}
+
+func TestUnmarshalJSON(t *testing.T) {
+	j := `{"currency":"EUR","unit":"euro","value":"529235.4859"}`
+
+	var m Money
+	err := json.Unmarshal([]byte(j), &m)
+
+	if err != nil {
+		t.Fatalf("error unmarshalling json")
+	}
+}
+
+func TestNullUnmarshalJSON(t *testing.T) {
+	j := `null`
+
+	var m Money
+	var e Money
+	err := json.Unmarshal([]byte(j), &m)
+
+	if err != nil {
+		t.Fatalf("did not expect an error")
+	}
+
+	moneyTest{t}.assertMoneyEqual(e, m)
+}
+
+func TestBadDataUnmarshalJSON(t *testing.T) {
+	badValueJSON := `{"currency":"EUR","unit":"euro","value":"not a number"}`
+	var e1 Money
+	var m1 Money
+	err := json.Unmarshal([]byte(badValueJSON), &m1)
+
+	if err != nil {
+		t.Fatalf("did not expect an error")
+	}
+	moneyTest{t}.assertMoneyEqual(e1, m1)
+
+	badCurrencyJSON := `{"currency":"i am not ISO4217 compliant","unit":"cent","value":"573.04"}`
+	var e2 Money
+	var m2 Money
+	err = json.Unmarshal([]byte(badCurrencyJSON), &m2)
+
+	if err != nil {
+		t.Fatalf("did not expect an error")
+	}
+	moneyTest{t}.assertMoneyEqual(e2, m2)
+
+	badUnitJSON := `{"currency":"USD","unit":"not a unit","value":"573.04"}`
+	var m3 Money
+	var e3 Money
+	err = json.Unmarshal([]byte(badUnitJSON), &m3)
+	if err != nil {
+		t.Fatalf("did not expect an error")
+	}
+
+	moneyTest{t}.assertMoneyEqual(e3, m3)
 }
