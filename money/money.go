@@ -9,15 +9,15 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type currency int64
+type Currency int64
 
 const (
-	DEF_CURRENCY currency = iota
+	def_currency Currency = iota
 	EUR
 	USD
 )
 
-func parseCurrency(s string) (c currency, err error) {
+func parseCurrency(s string) (c Currency, err error) {
 	s = strings.ToUpper(s)
 
 	switch s {
@@ -32,7 +32,7 @@ func parseCurrency(s string) (c currency, err error) {
 	return
 }
 
-func (c currency) string() (s string) {
+func (c Currency) string() (s string) {
 	switch c {
 	case EUR:
 		s = "EUR"
@@ -42,16 +42,16 @@ func (c currency) string() (s string) {
 	return
 }
 
-type unit int64
+type Unit int64
 
 const (
-	DEF_UNIT unit = iota
+	def_unit Unit = iota
 	CENT
 	EURO
 	DOLLAR
 )
 
-func parseUnit(s string) (u unit, err error) {
+func parseUnit(s string) (u Unit, err error) {
 	s = strings.ToUpper(s)
 
 	switch s {
@@ -68,7 +68,7 @@ func parseUnit(s string) (u unit, err error) {
 	return
 }
 
-func (u unit) string() (s string) {
+func (u Unit) string() (s string) {
 	switch u {
 	case CENT:
 		s = "CENT"
@@ -82,8 +82,8 @@ func (u unit) string() (s string) {
 
 type Money struct {
 	value    decimal.Decimal
-	currency currency
-	unit     unit
+	currency Currency
+	unit     Unit
 }
 
 func new(v decimal.Decimal, c string, u string) Money {
