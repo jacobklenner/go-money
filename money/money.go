@@ -2,118 +2,177 @@ package money
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/shopspring/decimal"
 )
 
-type Currency string
+type currency int64
 
 const (
-	EUR Currency = "EUR"
-	USD Currency = "USD"
+	DEF_CURRENCY currency = iota
+	EUR
+	USD
 )
 
-type Unit string
+func parseCurrency(s string) (c currency, err error) {
+	s = strings.ToUpper(s)
+
+	switch s {
+	case "EUR":
+		c = EUR
+	case "USD":
+		c = USD
+	default:
+		err = fmt.Errorf("provided currency %s not supported", s)
+	}
+
+	return
+}
+
+func (c currency) string() (s string) {
+	switch c {
+	case EUR:
+		s = "EUR"
+	case USD:
+		s = "USD"
+	}
+	return
+}
+
+type unit int64
 
 const (
-	Cent   Unit = "cent"
-	Euro   Unit = "euro"
-	Dollar Unit = "dollar"
+	DEF_UNIT unit = iota
+	CENT
+	EURO
+	DOLLAR
 )
+
+func parseUnit(s string) (u unit, err error) {
+	s = strings.ToUpper(s)
+
+	switch s {
+	case "CENT":
+		u = CENT
+	case "DOLLAR":
+		u = DOLLAR
+	case "EURO":
+		u = EURO
+	default:
+		err = fmt.Errorf("provided unit %s is not supported", s)
+	}
+
+	return
+}
+
+func (u unit) string() (s string) {
+	switch u {
+	case CENT:
+		s = "CENT"
+	case EURO:
+		s = "EURO"
+	case DOLLAR:
+		s = "DOLLAR"
+	}
+	return
+}
 
 type Money struct {
 	value    decimal.Decimal
-	currency Currency
-	unit     Unit
+	currency currency
+	unit     unit
+}
+
+func new(v decimal.Decimal, c string, u string) Money {
+	currency, erc := parseCurrency(c)
+	unit, eru := parseUnit(u)
+
+	if erc != nil || eru != nil {
+		return Money{}
+	}
+
+	return Money{
+		value:    v,
+		currency: currency,
+		unit:     unit,
+	}
+}
+
+func newEuro(v decimal.Decimal) Money {
+	return new(v, "EUR", "EURO")
+}
+
+func newEuroCent(v decimal.Decimal) Money {
+	return new(v, "EUR", "CENT")
+}
+
+func newUsdollar(v decimal.Decimal) Money {
+	return new(v, "USD", "DOLLAR")
 }
 
 func New(val int64, exp int32, c string, u string) Money {
-	return Money{
-		value:    decimal.New(val, exp),
-		unit:     Unit(u),
-		currency: Currency(c),
-	}
+	v := decimal.New(val, exp)
+
+	return new(v, c, u)
 }
 
 func NewEuro(val int64, exp int32) Money {
-	return Money{
-		value:    decimal.New(val, exp),
-		unit:     Euro,
-		currency: EUR,
-	}
+	v := decimal.New(val, exp)
+
+	return newEuro(v)
 }
 
 func ZeroEuro() Money {
-	return Money{
-		value:    decimal.Zero,
-		unit:     Euro,
-		currency: EUR,
-	}
+	v := decimal.Zero
+
+	return newEuro(v)
 }
 
 func ZeroUsDollar() Money {
-	return Money{
-		value:    decimal.Zero,
-		unit:     Dollar,
-		currency: USD,
-	}
+	v := decimal.Zero
+
+	return newUsdollar(v)
 }
 
 func NewEuroFromDecimal(d decimal.Decimal) Money {
-	return Money{
-		value:    d,
-		unit:     Euro,
-		currency: EUR,
-	}
+	return newEuro(d)
 }
 
 func NewEuroFromFloat(f float64) Money {
-	return Money{
-		value:    decimal.NewFromFloat(f),
-		unit:     Euro,
-		currency: EUR,
-	}
+	v := decimal.NewFromFloat(f)
+
+	return newEuro(v)
 }
 
 func NewEuroFromFloat32(f float32) Money {
-	return Money{
-		value:    decimal.NewFromFloat32(f),
-		unit:     Euro,
-		currency: EUR,
-	}
+	v := decimal.NewFromFloat32(f)
+
+	return newEuro(v)
 }
 
 func NewEuroCent(val int64, exp int32) Money {
-	return Money{
-		value:    decimal.New(val, exp),
-		unit:     Cent,
-		currency: EUR,
-	}
+	v := decimal.New(val, exp)
+
+	return newEuroCent(v)
 }
 
 func NewEuroCentFromDecimal(d decimal.Decimal) Money {
-	return Money{
-		value:    d,
-		unit:     Cent,
-		currency: EUR,
-	}
+	return newEuroCent(d)
 }
 
 func NewEuroCentFromFloat32(f float32) Money {
-	return Money{
-		value:    decimal.NewFromFloat32(f),
-		unit:     Cent,
-		currency: EUR,
-	}
+	v := decimal.NewFromFloat32(f)
+
+	return newEuroCent(v)
 }
 
 func NewEuroCentFromFloat(f float64) Money {
-	return Money{
-		value:    decimal.NewFromFloat(f),
-		unit:     Cent,
-		currency: EUR,
-	}
+	v := decimal.NewFromFloat(f)
+
+	return newEuroCent(v)
 }
 
 func (m1 Money) exactEqual(m2 Money) bool {
@@ -132,12 +191,12 @@ func (m1 Money) Equal(m2 Money) bool {
 	}
 
 	// scale both to cent to evaluate
-	if m1.unit == Euro || m1.unit == Dollar {
+	if m1.unit == EURO || m1.unit == DOLLAR {
 		m1.value = m1.value.Mul(decimal.New(10, 0))
-		m1.unit = Cent
-	} else if m2.unit == Euro || m2.unit == Dollar {
+		m1.unit = CENT
+	} else if m2.unit == EURO || m2.unit == DOLLAR {
 		m2.value = m2.value.Mul(decimal.New(10, 0))
-		m2.unit = Cent
+		m2.unit = CENT
 	}
 
 	return m1.exactEqual(m2)
@@ -240,11 +299,11 @@ func (m Money) ValueBigInt() *big.Int {
 
 // returns the currency
 func (m Money) Currency() string {
-	return string(m.currency)
+	return m.currency.string()
 }
 
 func (m Money) Unit() string {
-	return string(m.unit)
+	return m.unit.string()
 }
 
 func (m Money) MarshalJSON() ([]byte, error) {
@@ -259,22 +318,24 @@ func (m *Money) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		return nil
 	}
-	temp := map[string]string{}
-	err := json.Unmarshal(data, &temp)
+	kvp := map[string]string{}
+	err := json.Unmarshal(data, &kvp)
 
 	if err != nil {
-		return err
+		return nil
 	}
 
-	v, err := decimal.NewFromString(temp["value"])
+	v, erv := decimal.NewFromString(kvp["value"])
+	c, erc := parseCurrency(string(kvp["currency"]))
+	u, eru := parseUnit(string(kvp["unit"]))
 
-	if err != nil {
-		return err
+	if erv != nil || erc != nil || eru != nil {
+		return nil
 	}
 
 	m.value = v
-	m.currency = Currency(string(temp["currency"]))
-	m.unit = Unit(string(temp["unit"]))
+	m.currency = c
+	m.unit = u
 
-	return err
+	return nil
 }
