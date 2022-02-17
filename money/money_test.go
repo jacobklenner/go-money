@@ -443,6 +443,19 @@ func TestBadDataUnmarshalJSON(t *testing.T) {
 	moneyTest{t}.assertMoneyEqual(e3, m3)
 }
 
+func TestIncompleteUnmarshalJSON(t *testing.T) {
+	noUnitJSON := `{"currency":"EUR","value":"68493.01"}`
+	var m1 Money
+	e1 := NewEuroFromFloat(68493.01)
+	err := json.Unmarshal([]byte(noUnitJSON), &m1)
+
+	if err != nil {
+		t.Fatalf("did not expect an error")
+	}
+
+	moneyTest{t}.assertMoneyEqual(e1, m1)
+}
+
 func TestFloatMultiplication(t *testing.T) {
 	m := NewEuro(12482, -2)
 	e := NewEuro(599136, -5)

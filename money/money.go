@@ -2,6 +2,7 @@ package money
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"strings"
 
@@ -338,22 +339,42 @@ func (m *Money) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		return nil
 	}
-	kvp := map[string]string{}
-	err := json.Unmarshal(data, &kvp)
+	var tmp struct {
+		Value    decimal.Decimal `json:"value"`
+		Currency string          `json:"currency"`
+		Unit     string          `json:"unit"`
+	}
+	err := json.Unmarshal(data, &tmp)
 
 	if err != nil {
 		return nil
 	}
 
-	v, erv := decimal.NewFromString(kvp["value"])
-	c, okc := parseCurrency(string(kvp["currency"]))
-	u, oku := parseUnit(string(kvp["unit"]))
+	c, okc := parseCurrency(tmp.Currency)
+	u, oku := parseUnit(string(tmp.Unit))
 
-	if erv != nil || !okc || !oku {
+	// must have a currency
+	if !okc {
 		return nil
 	}
 
-	m.value = v
+	// default to base unit if undefined
+	if !oku {
+		switch c {
+		case EUR:
+			u = EURO
+		case USD:
+			u = DOLLAR
+		default:
+			err = fmt.Errorf("could not derive default unit for provided currency %s", c.string())
+		}
+	}
+
+	if err != nil {
+		return err
+	}
+
+	m.value = tmp.Value
 	m.currency = c
 	m.unit = u
 
