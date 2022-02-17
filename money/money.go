@@ -30,6 +30,7 @@ func parseCurrency(s string) (c currency, ok bool) {
 	case "USD":
 		c = USD
 	default:
+		c = -1
 		ok = false
 	}
 
@@ -65,6 +66,7 @@ func parseUnit(s string) (u unit, ok bool) {
 	case "EURO":
 		u = EURO
 	default:
+		u = -1
 		ok = false
 	}
 
@@ -83,12 +85,19 @@ func (u unit) string() (s string) {
 	return
 }
 
+func defaultMoney() Money {
+	return Money{
+		currency: -1,
+		unit:     -1,
+	}
+}
+
 func new(v decimal.Decimal, c string, u string) Money {
 	currency, okc := parseCurrency(c)
 	unit, oku := parseUnit(u)
 
 	if !okc || !oku {
-		return Money{}
+		return defaultMoney()
 	}
 
 	return Money{
@@ -225,7 +234,7 @@ func (m1 Money) sameUnit(m2 Money) bool {
 // returns m1 + m2, ok
 func (m1 Money) Add(m2 Money) (Money, bool) {
 	if !m1.sameUnit(m2) {
-		return Money{}, false
+		return defaultMoney(), false
 	}
 
 	return Money{
@@ -238,7 +247,7 @@ func (m1 Money) Add(m2 Money) (Money, bool) {
 // returns m1 - m2, ok
 func (m1 Money) Subtract(m2 Money) (Money, bool) {
 	if !m1.sameUnit(m2) {
-		return Money{}, false
+		return defaultMoney(), false
 	}
 
 	return Money{
@@ -251,7 +260,7 @@ func (m1 Money) Subtract(m2 Money) (Money, bool) {
 // returns m1 * m2, ok
 func (m1 Money) Multiply(m2 Money) (Money, bool) {
 	if !m1.sameUnit(m2) {
-		return Money{}, false
+		return defaultMoney(), false
 	}
 
 	return Money{
@@ -261,25 +270,40 @@ func (m1 Money) Multiply(m2 Money) (Money, bool) {
 	}, true
 }
 
+func (m Money) MultiplyInt(i int64) Money {
+	return Money{
+		value:    m.value.Mul(decimal.New(i, 0)),
+		unit:     m.unit,
+		currency: m.currency,
+	}
+}
+
+func (m Money) MultiplyFloat(f float64) Money {
+	return Money{
+		value:    m.value.Mul(decimal.NewFromFloat(f)),
+		unit:     m.unit,
+		currency: m.currency,
+	}
+}
+
+func (m Money) MultiplyDecimal(p decimal.Decimal) Money {
+	return Money{
+		value:    m.value.Mul(p),
+		unit:     m.unit,
+		currency: m.currency,
+	}
+}
+
 // returns m1 / m2, ok
 func (m1 Money) Divide(m2 Money) (Money, bool) {
 	if !m1.sameUnit(m2) {
-		return Money{}, false
+		return defaultMoney(), false
 	}
 
 	return Money{
 		value:    m1.value.Div(m2.value),
 		unit:     m1.unit,
 		currency: m1.currency,
-	}, true
-}
-
-// returns m * %p, ok
-func (m Money) Percent(p decimal.Decimal) (Money, bool) {
-	return Money{
-		value:    m.value.Mul(p),
-		unit:     m.unit,
-		currency: m.currency,
 	}, true
 }
 

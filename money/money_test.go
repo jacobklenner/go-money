@@ -32,7 +32,10 @@ func TestNew(t *testing.T) {
 }
 
 func TestNewBadArgs(t *testing.T) {
-	e := Money{}
+	e := Money{
+		currency: -1,
+		unit:     -1,
+	}
 
 	r := New(100, 1, "hey", "there")
 
@@ -248,21 +251,6 @@ func TestSameCurrencyDivision(t *testing.T) {
 	moneyTest{t}.assertMoneyEqual(e, r)
 }
 
-func TestSameCurrencyPercent(t *testing.T) {
-	m1 := NewEuroCentFromFloat(14.5677)
-	p := decimal.NewFromFloat(0.000653)
-
-	r, ok := m1.Percent(p)
-
-	e := NewEuroCentFromFloat(0.0095127081)
-
-	if !ok {
-		t.Fatalf("incompatable units. expected same units.")
-	}
-
-	moneyTest{t}.assertMoneyEqual(e, r)
-}
-
 func TestDifferentCurrencyAddition(t *testing.T) {
 	usd := New(123, 1, "USD", "dollar")
 	eur := New(123, 1, "EUR", "euro")
@@ -453,4 +441,38 @@ func TestBadDataUnmarshalJSON(t *testing.T) {
 	}
 
 	moneyTest{t}.assertMoneyEqual(e3, m3)
+}
+
+func TestBadNew(t *testing.T) {
+	m := New(45648, -2, "cent", "NZD")
+
+	fmt.Printf("%+v\n", m)
+}
+
+func TestIntMultiplication(t *testing.T) {
+	m := NewEuro(12482, -2)
+	e := NewEuro(24964, -2)
+
+	r := m.MultiplyInt(2)
+
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
+
+func TestFloatMultiplication(t *testing.T) {
+	m := NewEuro(12482, -2)
+	e := NewEuro(599136, -5)
+
+	r := m.MultiplyFloat(0.048)
+
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
+
+func TestDecimalMultiplication(t *testing.T) {
+	m := NewEuroCentFromFloat(14.5677)
+	e := NewEuroCentFromFloat(0.0095127081)
+	d := decimal.NewFromFloat(0.000653)
+
+	r := m.MultiplyDecimal(d)
+
+	moneyTest{t}.assertMoneyEqual(e, r)
 }
