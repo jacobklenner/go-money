@@ -270,25 +270,9 @@ func (m1 Money) Multiply(m2 Money) (Money, bool) {
 	}, true
 }
 
-func (m Money) MultiplyInt(i int64) Money {
-	return Money{
-		value:    m.value.Mul(decimal.New(i, 0)),
-		unit:     m.unit,
-		currency: m.currency,
-	}
-}
-
 func (m Money) MultiplyFloat(f float64) Money {
 	return Money{
 		value:    m.value.Mul(decimal.NewFromFloat(f)),
-		unit:     m.unit,
-		currency: m.currency,
-	}
-}
-
-func (m Money) MultiplyDecimal(p decimal.Decimal) Money {
-	return Money{
-		value:    m.value.Mul(p),
 		unit:     m.unit,
 		currency: m.currency,
 	}
@@ -305,6 +289,21 @@ func (m1 Money) Divide(m2 Money) (Money, bool) {
 		unit:     m1.unit,
 		currency: m1.currency,
 	}, true
+}
+
+func (m1 Money) Quotient(m2 Money) (int64, bool) {
+	if !m1.sameUnit(m2) {
+		return 0, false
+	}
+
+	q, _ := m1.value.QuoRem(m2.value, 0)
+
+	return q.IntPart(), true
+}
+
+func (m Money) QutoientFloat(f float64) int64 {
+	q, _ := m.value.QuoRem(decimal.NewFromFloat(f), 0)
+	return q.IntPart()
 }
 
 // returns float64 representation of the money, and flag indicating if this value is exact

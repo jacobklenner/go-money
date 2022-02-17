@@ -443,21 +443,6 @@ func TestBadDataUnmarshalJSON(t *testing.T) {
 	moneyTest{t}.assertMoneyEqual(e3, m3)
 }
 
-func TestBadNew(t *testing.T) {
-	m := New(45648, -2, "cent", "NZD")
-
-	fmt.Printf("%+v\n", m)
-}
-
-func TestIntMultiplication(t *testing.T) {
-	m := NewEuro(12482, -2)
-	e := NewEuro(24964, -2)
-
-	r := m.MultiplyInt(2)
-
-	moneyTest{t}.assertMoneyEqual(e, r)
-}
-
 func TestFloatMultiplication(t *testing.T) {
 	m := NewEuro(12482, -2)
 	e := NewEuro(599136, -5)
@@ -467,12 +452,43 @@ func TestFloatMultiplication(t *testing.T) {
 	moneyTest{t}.assertMoneyEqual(e, r)
 }
 
-func TestDecimalMultiplication(t *testing.T) {
-	m := NewEuroCentFromFloat(14.5677)
-	e := NewEuroCentFromFloat(0.0095127081)
-	d := decimal.NewFromFloat(0.000653)
+func TestSameCurrencyQuotient(t *testing.T) {
+	m1 := NewEuro(48524, -2)
+	m2 := NewEuro(104563, -4)
 
-	r := m.MultiplyDecimal(d)
+	r, ok := m1.Quotient(m2)
 
-	moneyTest{t}.assertMoneyEqual(e, r)
+	if !ok {
+		t.Fatalf("incompatable units. expected same units.")
+	}
+
+	fmt.Println(r)
+
+	e := int64(46)
+
+	if r != e {
+		t.Fatalf("error calculating quotient. expected %d got %d", e, r)
+	}
+}
+
+func TestDifferentCurrencyQuotient(t *testing.T) {
+	m1 := NewEuro(47284, -2)
+	m2 := New(424, -1, "USD", "dollar")
+
+	_, ok := m1.Quotient(m2)
+
+	if ok {
+		t.Fatalf("should not return ok due to incomaptible units")
+	}
+}
+
+func TestQutientFloat(t *testing.T) {
+	m := NewEuro(579214, -2)
+
+	r := m.QutoientFloat(56.03)
+	e := int64(103)
+
+	if r != e {
+		t.Fatalf("expected %d got %d", e, r)
+	}
 }
