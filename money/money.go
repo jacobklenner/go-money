@@ -2,37 +2,41 @@ package money
 
 import (
 	"encoding/json"
-	"fmt"
 	"math/big"
 	"strings"
 
 	"github.com/shopspring/decimal"
 )
 
-type Currency int64
+type Money struct {
+	value    decimal.Decimal
+	currency currency
+	unit     unit
+}
+
+type currency int64
 
 const (
-	def_currency Currency = iota
-	EUR
+	EUR currency = iota
 	USD
 )
 
-func parseCurrency(s string) (c Currency, err error) {
+func parseCurrency(s string) (c currency, ok bool) {
 	s = strings.ToUpper(s)
-
+	ok = true
 	switch s {
 	case "EUR":
 		c = EUR
 	case "USD":
 		c = USD
 	default:
-		err = fmt.Errorf("provided currency %s not supported", s)
+		ok = false
 	}
 
 	return
 }
 
-func (c Currency) string() (s string) {
+func (c currency) string() (s string) {
 	switch c {
 	case EUR:
 		s = "EUR"
@@ -42,18 +46,17 @@ func (c Currency) string() (s string) {
 	return
 }
 
-type Unit int64
+type unit int64
 
 const (
-	def_unit Unit = iota
-	CENT
+	CENT unit = iota
 	EURO
 	DOLLAR
 )
 
-func parseUnit(s string) (u Unit, err error) {
+func parseUnit(s string) (u unit, ok bool) {
 	s = strings.ToUpper(s)
-
+	ok = true
 	switch s {
 	case "CENT":
 		u = CENT
@@ -62,13 +65,13 @@ func parseUnit(s string) (u Unit, err error) {
 	case "EURO":
 		u = EURO
 	default:
-		err = fmt.Errorf("provided unit %s is not supported", s)
+		ok = false
 	}
 
 	return
 }
 
-func (u Unit) string() (s string) {
+func (u unit) string() (s string) {
 	switch u {
 	case CENT:
 		s = "CENT"
@@ -80,17 +83,11 @@ func (u Unit) string() (s string) {
 	return
 }
 
-type Money struct {
-	value    decimal.Decimal
-	currency Currency
-	unit     Unit
-}
-
 func new(v decimal.Decimal, c string, u string) Money {
-	currency, erc := parseCurrency(c)
-	unit, eru := parseUnit(u)
+	currency, okc := parseCurrency(c)
+	unit, oku := parseUnit(u)
 
-	if erc != nil || eru != nil {
+	if !okc || !oku {
 		return Money{}
 	}
 
@@ -326,10 +323,10 @@ func (m *Money) UnmarshalJSON(data []byte) error {
 	}
 
 	v, erv := decimal.NewFromString(kvp["value"])
-	c, erc := parseCurrency(string(kvp["currency"]))
-	u, eru := parseUnit(string(kvp["unit"]))
+	c, okc := parseCurrency(string(kvp["currency"]))
+	u, oku := parseUnit(string(kvp["unit"]))
 
-	if erv != nil || erc != nil || eru != nil {
+	if erv != nil || !okc || !oku {
 		return nil
 	}
 
