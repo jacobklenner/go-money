@@ -434,7 +434,7 @@ func TestBadDataUnmarshalJSON(t *testing.T) {
 
 	badUnitJSON := `{"currency":"USD","unit":"not a unit","value":"573.04"}`
 	var m3 Money
-	var e3 Money
+	e3 := New(57304, -2, "USD", "DOLLAR")
 	err = json.Unmarshal([]byte(badUnitJSON), &m3)
 	if err != nil {
 		t.Fatalf("did not expect an error")
