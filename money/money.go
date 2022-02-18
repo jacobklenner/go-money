@@ -126,6 +126,29 @@ func New(val int64, exp int32, c string, u string) Money {
 	return new(v, c, u)
 }
 
+func NewFromFloat(f float64, c string, u string) Money {
+	d := decimal.NewFromFloat(f)
+
+	return new(d, c, u)
+}
+
+func NewDefaultFromFloat(f float64, c string) Money {
+	d := decimal.NewFromFloat(f)
+
+	c = strings.ToUpper(c)
+	var u string
+	switch c {
+	case "EUR":
+		u = "euro"
+	case "USD":
+		u = "dollar"
+	default:
+		return defaultMoney()
+	}
+
+	return new(d, c, u)
+}
+
 func NewEuro(val int64, exp int32) Money {
 	v := decimal.New(val, exp)
 

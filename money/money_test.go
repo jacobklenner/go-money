@@ -42,6 +42,52 @@ func TestNewBadArgs(t *testing.T) {
 	moneyTest{t}.assertMoneyEqual(e, r)
 }
 
+func TestNewFromFloat(t *testing.T) {
+	e := Money{
+		value:    decimal.NewFromFloat(528.2900),
+		currency: EUR,
+		unit:     EURO,
+	}
+
+	r := NewFromFloat(528.2900, "EUR", "euro")
+
+	moneyTest{t}.assertMoneyEqual(e, r)
+
+	e = defaultMoney()
+
+	r = NewFromFloat(528.2900, "NZD", "dollar")
+
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
+
+func TestNewDefaultFromFloat(t *testing.T) {
+	e := Money{
+		value:    decimal.NewFromFloat(528.2900),
+		currency: EUR,
+		unit:     EURO,
+	}
+
+	r := NewDefaultFromFloat(528.2900, "EUR")
+
+	moneyTest{t}.assertMoneyEqual(e, r)
+
+	e = Money{
+		value:    decimal.NewFromFloat(512.00),
+		currency: USD,
+		unit:     DOLLAR,
+	}
+
+	r = NewDefaultFromFloat(512.00, "USD")
+
+	moneyTest{t}.assertMoneyEqual(e, r)
+
+	e = defaultMoney()
+
+	r = NewDefaultFromFloat(512.00, "NZD")
+
+	moneyTest{t}.assertMoneyEqual(e, r)
+}
+
 func TestNewEuro(t *testing.T) {
 	e := Money{
 		value:    decimal.New(345, 2),
