@@ -329,11 +329,20 @@ func (m Money) Unit() string {
 }
 
 func (m Money) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
-		"value":    m.value,
-		"currency": m.currency,
-		"unit":     m.unit,
+	bs, erj := json.Marshal(struct {
+		Value    decimal.Decimal
+		Currency string
+		Unit     string
+	}{
+		Value:    m.value,
+		Currency: m.currency.string(),
+		Unit:     m.unit.string(),
 	})
+	if erj != nil {
+		return nil, erj
+	}
+
+	return bs, nil
 }
 
 func (m *Money) UnmarshalJSON(data []byte) error {
