@@ -124,18 +124,6 @@ func TestZeroUsDollar(t *testing.T) {
 	moneyTest{t}.assertMoneyEqual(e, r)
 }
 
-func TestNewEuroFromFloat32(t *testing.T) {
-	e := Money{
-		value:    decimal.NewFromFloat32(4503.203),
-		currency: EUR,
-		unit:     EURO,
-	}
-
-	r := NewEuroFromFloat32(4503.203)
-
-	moneyTest{t}.assertMoneyEqual(e, r)
-}
-
 func TestNewEuroFromFloat(t *testing.T) {
 	e := Money{
 		value:    decimal.NewFromFloat(4503.203),
@@ -172,44 +160,6 @@ func TestNewEuroCent(t *testing.T) {
 	moneyTest{t}.assertMoneyEqual(e, r)
 }
 
-func TestNewEuroCentFromFloat32(t *testing.T) {
-	e := Money{
-		value:    decimal.NewFromFloat32(58292.304),
-		currency: EUR,
-		unit:     CENT,
-	}
-
-	r := NewEuroCentFromFloat32(58292.304)
-
-	moneyTest{t}.assertMoneyEqual(e, r)
-}
-
-func TestNewEuroCentFromFloat(t *testing.T) {
-	e := Money{
-		value:    decimal.NewFromFloat(58292.304),
-		currency: EUR,
-		unit:     CENT,
-	}
-
-	r := NewEuroCentFromFloat(58292.304)
-
-	moneyTest{t}.assertMoneyEqual(e, r)
-}
-
-func TestNewEuroCentFromDecimal(t *testing.T) {
-	d := decimal.New(4820, 4)
-
-	e := Money{
-		value:    d,
-		currency: EUR,
-		unit:     CENT,
-	}
-
-	r := NewEuroCentFromDecimal(d)
-
-	moneyTest{t}.assertMoneyEqual(e, r)
-}
-
 func TestEqual(t *testing.T) {
 	m1 := NewEuroFromFloat(5738.0)
 	m2 := NewEuroFromFloat(5738.0)
@@ -219,7 +169,7 @@ func TestEqual(t *testing.T) {
 	}
 
 	m3 := NewEuroFromFloat(6930.20)
-	m4 := NewEuroCentFromFloat(693020)
+	m4 := New(693020, -1, "EUR", "EURO")
 
 	if m3.Equal(m4) {
 		t.Fatal("expected money would not be exact")
@@ -238,12 +188,12 @@ func TestEqual(t *testing.T) {
 }
 
 func TestSameCurrencyAddition(t *testing.T) {
-	m1 := NewEuroCentFromFloat(14.5677)
-	m2 := NewEuroCentFromFloat(100.0000)
+	m1 := NewEuroFromFloat(14.5677)
+	m2 := NewEuroFromFloat(100.0000)
 
 	r, ok := m1.Add(m2)
 
-	e := NewEuroCentFromFloat(114.5677)
+	e := NewEuroFromFloat(114.5677)
 
 	if !ok {
 		t.Fatalf("incompatable units. expected same units.")
@@ -253,12 +203,12 @@ func TestSameCurrencyAddition(t *testing.T) {
 }
 
 func TestSameCurrencySubtraction(t *testing.T) {
-	m1 := NewEuroCentFromFloat(14.5677)
-	m2 := NewEuroCentFromFloat(100.0000)
+	m1 := NewEuroFromFloat(14.5677)
+	m2 := NewEuroFromFloat(100.0000)
 
 	r, ok := m1.Subtract(m2)
 
-	e := NewEuroCentFromFloat(-85.4323)
+	e := NewEuroFromFloat(-85.4323)
 
 	if !ok {
 		t.Fatalf("incompatable units. expected same units.")
@@ -268,12 +218,12 @@ func TestSameCurrencySubtraction(t *testing.T) {
 }
 
 func TestSameCurrencyMultiplication(t *testing.T) {
-	m1 := NewEuroCentFromFloat(14.5677)
-	m2 := NewEuroCentFromFloat(100.0000)
+	m1 := NewEuroFromFloat(14.5677)
+	m2 := NewEuroFromFloat(100.0000)
 
 	r, ok := m1.Multiply(m2)
 
-	e := NewEuroCentFromFloat(1456.77)
+	e := NewEuroFromFloat(1456.77)
 
 	if !ok {
 		t.Fatalf("incompatable units. expected same units.")
@@ -283,12 +233,12 @@ func TestSameCurrencyMultiplication(t *testing.T) {
 }
 
 func TestSameCurrencyDivision(t *testing.T) {
-	m1 := NewEuroCentFromFloat(14.5677)
-	m2 := NewEuroCentFromFloat(100.0000)
+	m1 := NewEuroFromFloat(14.5677)
+	m2 := NewEuroFromFloat(100.0000)
 
 	r, ok := m1.Divide(m2)
 
-	e := NewEuroCentFromFloat(0.145677)
+	e := NewEuroFromFloat(0.145677)
 
 	if !ok {
 		t.Fatalf("incompatable units. expected same units.")
@@ -343,7 +293,7 @@ func TestDifferentCurrencyDivision(t *testing.T) {
 
 func TestValueToFloat(t *testing.T) {
 	e := 573.402
-	m := NewEuroCentFromFloat(e)
+	m := NewEuroFromFloat(e)
 
 	v, _ := m.ValueFloat64()
 
@@ -413,7 +363,7 @@ func TestEqualUnit(t *testing.T) {
 
 func TestEqualCurrency(t *testing.T) {
 	m1 := NewEuroFromFloat(34920.43)
-	m2 := NewEuroCentFromFloat(58302.405)
+	m2 := NewDefaultFromFloat(58302.405, "EUR")
 
 	if !m1.EqualCurrency(m2) {
 		t.Fatalf("expected equal currency")

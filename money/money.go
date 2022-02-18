@@ -177,30 +177,8 @@ func NewEuroFromFloat(f float64) Money {
 	return newEuro(v)
 }
 
-func NewEuroFromFloat32(f float32) Money {
-	v := decimal.NewFromFloat32(f)
-
-	return newEuro(v)
-}
-
 func NewEuroCent(val int64, exp int32) Money {
 	v := decimal.New(val, exp)
-
-	return newEuroCent(v)
-}
-
-func NewEuroCentFromDecimal(d decimal.Decimal) Money {
-	return newEuroCent(d)
-}
-
-func NewEuroCentFromFloat32(f float32) Money {
-	v := decimal.NewFromFloat32(f)
-
-	return newEuroCent(v)
-}
-
-func NewEuroCentFromFloat(f float64) Money {
-	v := decimal.NewFromFloat(f)
 
 	return newEuroCent(v)
 }
