@@ -169,7 +169,7 @@ func TestEqual(t *testing.T) {
 	}
 
 	m3 := NewEuroFromFloat(6930.20)
-	m4 := New(693020, -1, "EUR", "EURO")
+	m4 := New(693020, -2, "EUR", "CENT")
 
 	if m3.Equal(m4) {
 		t.Fatal("expected money would not be exact")
