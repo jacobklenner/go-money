@@ -308,6 +308,10 @@ func (m Money) QutoientFloat(f float64) int64 {
 	return q.IntPart()
 }
 
+func (m Money) ValueDecimal() decimal.Decimal {
+	return m.value
+}
+
 // returns float64 representation of the money, and flag indicating if this value is exact
 func (m Money) ValueFloat64() (val float64, exact bool) {
 	val, exact = m.value.Float64()
